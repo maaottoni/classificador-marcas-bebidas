@@ -34,10 +34,10 @@
   "n_classes": 30,
   "text_column": "item_normalizado",
   "target_column": "label",
-  "accuracy": 0.9827,
-  "f1_macro": 0.9506,
-  "cv_f1_macro_mean": 0.9494,
-  "cv_f1_macro_std": 0.0056,
-  "model_type": "TfidfVectorizer (char n-grams) + LogisticRegression",
+  "accuracy": 0.9858,
+  "f1_macro": 0.9712,
+  "cv_f1_macro_mean": 0.9668,
+  "cv_f1_macro_std": 0.0013,
+  "model_type": "TfidfVectorizer (char n-grams) + LogisticRegression + RandomOverSampler",
   "use_case": "Classificação de marcas de bebidas"
 }

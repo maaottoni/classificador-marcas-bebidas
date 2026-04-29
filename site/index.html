@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classificador de Marcas — Goomer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --laranja:       #ff6b35;
+      --laranja-dark:  #e05520;
+      --laranja-light: #fff3ee;
+      --preto:         #111111;
+      --cinza-1:       #f5f5f5;
+      --cinza-2:       #e8e8e8;
+      --cinza-3:       #999;
+      --branco:        #ffffff;
+      --radius:        12px;
+      --shadow:        0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    body {
+      background: var(--cinza-1);
+      color: var(--preto);
+      font-family: 'Sora', sans-serif;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: var(--branco);
+      border-bottom: 1px solid var(--cinza-2);
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--preto);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--laranja);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .nav-tag {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--laranja);
+      background: var(--laranja-light);
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .hero {
+      background: var(--branco);
+      border-bottom: 1px solid var(--cinza-2);
+      padding: 56px 40px 48px;
+      text-align: center;
+    }
+
+    .hero-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--laranja);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--preto);
+      margin-bottom: 16px;
+    }
+
+    .hero h1 span { color: var(--laranja); }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--cinza-3);
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .card {
+      background: var(--branco);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--cinza-3);
+      margin-bottom: 20px;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--cinza-2);
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+
+    .upload-zone:hover, .upload-zone.drag {
+      border-color: var(--laranja);
+      background: var(--laranja-light);
+    }
+
+    .upload-icon-wrap {
+      width: 56px;
+      height: 56px;
+      background: var(--laranja-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    .upload-icon-wrap svg { width: 24px; height: 24px; stroke: var(--laranja); }
+
+    .upload-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--preto);
+      margin-bottom: 6px;
+    }
+
+    .upload-hint { font-size: 13px; color: var(--cinza-3); }
+
+    .file-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      background: var(--laranja-light);
+      color: var(--laranja-dark);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+
+    .file-badge.visible { display: inline-flex; }
+
+    #file-input { display: none; }
+
+    .field-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--preto);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .field-select {
+      width: 100%;
+      border: 1.5px solid var(--cinza-2);
+      border-radius: 8px;
+      background: var(--branco);
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      padding: 12px 16px;
+      appearance: none;
+      cursor: pointer;
+      outline: none;
+      color: var(--preto);
+      transition: border-color .2s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+    }
+
+    .field-select:focus { border-color: var(--laranja); }
+
+    .btn-run {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      background: var(--laranja);
+      color: var(--branco);
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'Sora', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-run:hover:not(:disabled) { background: var(--laranja-dark); transform: translateY(-1px); }
+    .btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .progress-card {
+      background: var(--branco);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .progress-card.visible { display: block; }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .progress-text { font-size: 13px; font-weight: 600; color: var(--preto); }
+    .progress-pct  { font-size: 13px; font-weight: 700; color: var(--laranja); }
+
+    .progress-track {
+      height: 8px;
+      background: var(--cinza-2);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--laranja);
+      border-radius: 100px;
+      width: 0%;
+      transition: width .3s;
+    }
+
+    .error-card {
+      background: #fff5f5;
+      border: 1.5px solid #ffcdd2;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #c62828;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-card.visible { display: block; }
+
+    .results { display: none; }
+    .results.visible { display: block; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--branco);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--preto);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-value.orange { color: var(--laranja); }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--cinza-3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .table-card {
+      background: var(--branco);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--cinza-2);
+    }
+
+    .table-title { font-size: 14px; font-weight: 700; color: var(--preto); }
+    .table-subtitle { font-size: 12px; color: var(--cinza-3); margin-top: 2px; }
+
+    .btn-download {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: var(--laranja);
+      color: var(--branco);
+      border: none;
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      white-space: nowrap;
+    }
+
+    .btn-download:hover { background: var(--laranja-dark); }
+    .btn-download svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
+
+    .table-wrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+    thead { position: sticky; top: 0; background: var(--cinza-1); z-index: 1; }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--cinza-3);
+      border-bottom: 1px solid var(--cinza-2);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--cinza-2);
+      color: var(--preto);
+      white-space: nowrap;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .num-cell { color: var(--cinza-3); font-size: 12px; }
+
+    .badge-marca {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--laranja-light);
+      color: var(--laranja-dark);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge-nenhuma {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--cinza-2);
+      color: var(--cinza-3);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge-conf {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .conf-high { background: #e6f7ee; color: #008a3e; }
+    .conf-mid  { background: #fff8e1; color: #e65100; }
+    .conf-low  { background: #fff5f5; color: #c62828; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    Classificador de Marcas
+  </div>
+  <span class="nav-tag">Retail Media · Goomer</span>
+</nav>
+
+<div class="hero">
+  <p class="hero-eyebrow">Goomer Analytics</p>
+  <h1>Identifique <span>marcas de bebidas</span><br>no cardápio</h1>
+  <p>Faça upload do seu CSV e o modelo identifica automaticamente quais marcas alvo estão presentes em cada item do cardápio.</p>
+</div>
+
+<div class="main">
+
+  <div class="card">
+    <p class="card-title">1. Selecione o arquivo</p>
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <p class="upload-label">Arraste seu CSV ou clique para selecionar</p>
+      <p class="upload-hint">Arquivo .csv com os itens do cardápio</p>
+      <div class="file-badge" id="file-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="file-name-text">arquivo.csv</span>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept=".csv">
+  </div>
+
+  <div class="card" id="config" style="display:none">
+    <p class="card-title">2. Configure as colunas</p>
+    <label class="field-label" for="col-select">Qual coluna contém o nome/texto do item?</label>
+    <select class="field-select" id="col-select"></select>
+  </div>
+
+  <button class="btn-run" id="btn-run" disabled onclick="run()">
+    Identificar marcas
+  </button>
+
+  <div class="progress-card" id="progress-card">
+    <div class="progress-top">
+      <span class="progress-text" id="progress-text">Processando...</span>
+      <span class="progress-pct" id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <div class="error-card" id="error-card"></div>
+
+  <div class="results" id="results">
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div>
+          <div class="table-title" id="table-title">Resultados</div>
+          <div class="table-subtitle" id="table-subtitle"></div>
+        </div>
+        <button class="btn-download" onclick="download()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Baixar CSV
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table id="result-table">
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API   = 'http://localhost:8000';
+  const BATCH = 500;
+
+  let csvData = [], csvHeaders = [], resultados = [], selectedCol = '';
+
+  // drag & drop
+  const zone = document.getElementById('drop-zone');
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  document.getElementById('file-input').addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file.name.endsWith('.csv')) { showError('Selecione um arquivo .csv'); return; }
+    hideError();
+    document.getElementById('file-name-text').textContent = file.name;
+    document.getElementById('file-badge').classList.add('visible');
+    const reader = new FileReader();
+    reader.onload = e => parseCSV(e.target.result);
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  function parseCSV(text) {
+    const result = Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: h => h.trim()
+    });
+
+    if (!result.data || !result.data.length) { showError('CSV vazio ou sem dados.'); return; }
+
+    csvHeaders = result.meta.fields;
+    csvData    = result.data;
+
+    const sel = document.getElementById('col-select');
+    sel.innerHTML = '';
+    csvHeaders.forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h; opt.textContent = h;
+      const hLower = h.toLowerCase();
+      if (['item_normalizado','item_name','nome_item','name_normalized','nome','item','produto'].includes(hLower)) {
+        opt.selected = true;
+      }
+      sel.appendChild(opt);
+    });
+
+    document.getElementById('config').style.display = 'block';
+    document.getElementById('btn-run').disabled = false;
+    document.getElementById('results').classList.remove('visible');
+  }
+
+  async function run() {
+    selectedCol = document.getElementById('col-select').value;
+    const textos = csvData.map(row => row[selectedCol] || '');
+
+    hideError();
+    document.getElementById('results').classList.remove('visible');
+    document.getElementById('btn-run').disabled = true;
+
+    const card = document.getElementById('progress-card');
+    const fill = document.getElementById('progress-fill');
+    const txt  = document.getElementById('progress-text');
+    const pct  = document.getElementById('progress-pct');
+    card.classList.add('visible');
+
+    resultados = [];
+    const total = textos.length;
+    let done = 0;
+
+    for (let i = 0; i < total; i += BATCH) {
+      const chunk = textos.slice(i, i + BATCH);
+      try {
+        const res = await fetch(`${API}/predict/batch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itens: chunk }),
+        });
+        if (!res.ok) throw new Error(`Erro ${res.status}`);
+        const data = await res.json();
+        resultados.push(...data.resultados);
+      } catch (err) {
+        card.classList.remove('visible');
+        document.getElementById('btn-run').disabled = false;
+        showError(`Não foi possível conectar à API. Verifique se ela está rodando em ${API}`);
+        return;
+      }
+      done += chunk.length;
+      const p = Math.round(done / total * 100);
+      fill.style.width = p + '%';
+      pct.textContent  = p + '%';
+      txt.textContent  = `Classificando ${done.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} itens...`;
+    }
+
+    card.classList.remove('visible');
+    document.getElementById('btn-run').disabled = false;
+    showResults();
+  }
+
+  function showResults() {
+    const total       = resultados.length;
+    const comMarca    = resultados.filter(r => r.marca_predita !== 'nenhuma').length;
+    const semMarca    = total - comMarca;
+    const porMarca    = {};
+    let somaConf      = 0;
+
+    resultados.forEach(r => {
+      if (r.marca_predita !== 'nenhuma') {
+        porMarca[r.marca_predita] = (porMarca[r.marca_predita] || 0) + 1;
+      }
+      somaConf += r.confianca;
+    });
+
+    const confMedia  = (somaConf / total * 100).toFixed(1);
+    const nMarcas    = Object.keys(porMarca).length;
+    const pctComMarca = ((comMarca / total) * 100).toFixed(1);
+
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-value">${total.toLocaleString('pt-BR')}</div>
+        <div class="stat-label">Itens analisados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value orange">${comMarca.toLocaleString('pt-BR')}</div>
+        <div class="stat-label">Com marca alvo</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${nMarcas}</div>
+        <div class="stat-label">Marcas distintas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value orange">${confMedia}%</div>
+        <div class="stat-label">Confiança média</div>
+      </div>
+    `;
+
+    // Cabeçalho dinâmico — todas as colunas do CSV + marca + confiança
+    const extraCols = csvHeaders.filter(h => h !== selectedCol);
+    document.getElementById('table-head').innerHTML = `<tr>
+      <th>#</th>
+      <th>${selectedCol}</th>
+      ${extraCols.map(h => `<th>${h}</th>`).join('')}
+      <th>Marca predita</th>
+      <th>Confiança</th>
+    </tr>`;
+
+    const preview = resultados.slice(0, 200);
+    document.getElementById('table-body').innerHTML = preview.map((r, i) => {
+      const row  = csvData[i];
+      const conf = r.confianca;
+      const cls  = conf >= 0.85 ? 'conf-high' : conf >= 0.60 ? 'conf-mid' : 'conf-low';
+      const marcaBadge = r.marca_predita === 'nenhuma'
+        ? `<span class="badge-nenhuma">nenhuma</span>`
+        : `<span class="badge-marca">${r.marca_predita}</span>`;
+
+      const extraCells = extraCols.map(h =>
+        `<td title="${row[h] || ''}">${row[h] || ''}</td>`
+      ).join('');
+
+      return `<tr>
+        <td class="num-cell">${i + 1}</td>
+        <td title="${r.texto_original}">${r.texto_original}</td>
+        ${extraCells}
+        <td>${marcaBadge}</td>
+        <td><span class="badge-conf ${cls}">${(conf * 100).toFixed(1)}%</span></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('table-title').textContent =
+      `${comMarca.toLocaleString('pt-BR')} itens com marca alvo (${pctComMarca}% do total)`;
+    document.getElementById('table-subtitle').textContent = total > 200
+      ? `Exibindo 200 primeiros — baixe o CSV para ver todos`
+      : `Todos os itens analisados`;
+
+    document.getElementById('results').classList.add('visible');
+  }
+
+  function download() {
+    // Mantém todas as colunas originais + adiciona marca_predita e confianca
+    const rows = csvData.map((row, i) => {
+      const r = resultados[i];
+      return {
+        ...row,
+        marca_predita: r?.marca_predita || '',
+        confianca:     r ? (r.confianca * 100).toFixed(1) + '%' : '',
+      };
+    });
+
+    const csv = Papa.unparse(rows, {
+      quotes: true,
+      header: true,
+      newline: '\n'
+    });
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'marcas_classificadas.csv';
+    a.click();
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-card');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hideError() { document.getElementById('error-card').classList.remove('visible'); }
+</script>
+</body>
+</html>
